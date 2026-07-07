@@ -1,4 +1,5 @@
 from researchgraphos.models import Project, SourceItem
+from researchgraphos.demo_data import build_demo_project_state
 
 
 def test_project_and_source_models_can_be_created():
@@ -19,3 +20,12 @@ def test_project_and_source_models_can_be_created():
     assert project.name == "Failure-aware GraphRAG Router"
     assert source.kind == "paper"
     assert source.status == "read"
+
+
+def test_demo_project_state_contains_graphrag_sources():
+    state = build_demo_project_state()
+
+    assert state["project"].name == "Failure-aware GraphRAG Router"
+    assert len(state["sources"]) >= 4
+    assert any(source.title == "LightRAG" for source in state["sources"])
+    assert any(source.kind == "repo" for source in state["sources"])
