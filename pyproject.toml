@@ -1,0 +1,23 @@
+[project]
+name = "researchgraphos"
+version = "0.1.0"
+description = "Project-aware research graph engine for AI/CS literature review"
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2.8",
+  "streamlit>=1.36",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+  "ruff>=0.5",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
