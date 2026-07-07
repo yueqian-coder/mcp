@@ -30,6 +30,27 @@ python -m venv .venv
 
 Open `http://localhost:8501`.
 
+## Optional API Research State Agent
+
+The app works without an API key by using the deterministic demo report.
+
+To enable the API-backed Research State Agent:
+
+```bash
+copy .env.example .env
+```
+
+Then edit `.env`:
+
+```text
+LLM_PROVIDER=openai_compatible
+LLM_BASE_URL=https://your-provider.example/v1
+LLM_API_KEY=replace-with-your-key
+LLM_MODEL=replace-with-model-name
+```
+
+Never commit `.env`. It is ignored by git.
+
 ## Run With Docker
 
 ```bash

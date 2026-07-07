@@ -1,16 +1,43 @@
 import streamlit as st
 
+from researchgraphos.agent import ResearchStateAgent
+from researchgraphos.config import LLMSettings, load_env_file
 from researchgraphos.demo_data import build_demo_project_state
+from researchgraphos.llm import OpenAICompatibleClient
 from researchgraphos.report import build_research_state_report
 
 
 st.set_page_config(page_title="ResearchGraphOS", layout="wide")
 
+load_env_file()
 state = build_demo_project_state()
-report = build_research_state_report(state)
+settings = LLMSettings.from_env()
 
 st.title("ResearchGraphOS")
 st.caption("Ask -> Diagnose Gap -> Confirm Status -> Recommend Next Step")
+
+with st.sidebar:
+    st.header("Report Mode")
+    report_mode = st.radio(
+        "Choose how to generate the report",
+        options=["Deterministic demo report", "API Research State Agent"],
+    )
+    question = st.text_area(
+        "Project-aware question",
+        value="What is this project missing, and what should I read or run next?",
+        height=120,
+    )
+
+if report_mode == "API Research State Agent":
+    if settings.is_configured:
+        provider = OpenAICompatibleClient(settings=settings)
+        report = ResearchStateAgent(provider=provider).answer(question=question, state=state)
+        st.sidebar.success("API agent mode enabled.")
+    else:
+        report = build_research_state_report(state)
+        st.sidebar.warning("API settings are incomplete. Using deterministic fallback.")
+else:
+    report = build_research_state_report(state)
 
 st.header(report.project.name)
 st.write(report.project.goal)
