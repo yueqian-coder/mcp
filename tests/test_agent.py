@@ -29,6 +29,8 @@ def test_research_state_agent_validates_provider_json():
     assert report.project.name == "Failure-aware GraphRAG Router"
     assert any(gap.missing == "query routing method" for gap in report.gaps)
     assert "What am I missing?" in provider.messages[-1]["content"]
+    assert not agent.used_fallback
+    assert agent.fallback_reason == ""
 
 
 def test_research_state_agent_falls_back_to_deterministic_report():
@@ -39,3 +41,5 @@ def test_research_state_agent_falls_back_to_deterministic_report():
 
     assert report.short_answer == build_research_state_report(state).short_answer
     assert any(rec.target == "EA-GraphRAG" for rec in report.recommendations)
+    assert agent.used_fallback
+    assert "network unavailable" in agent.fallback_reason

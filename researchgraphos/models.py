@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 SourceKind = Literal["paper", "repo", "note", "dataset", "benchmark", "metric"]
@@ -74,7 +74,7 @@ class StatusQuestion(BaseModel):
 
 
 class EvidencePath(BaseModel):
-    path: list[str]
+    path: list[str] = Field(min_length=1)
     explanation: str
     citation: str
 
@@ -95,3 +95,16 @@ class ResearchStateReport(BaseModel):
     novelty_overlaps: list[NoveltyOverlap]
     status_questions: list[StatusQuestion]
     recommendations: list[Recommendation]
+
+    @model_validator(mode="after")
+    def recommendations_must_reference_existing_gaps(self) -> Self:
+        gap_ids = {gap.id for gap in self.gaps}
+        missing_gap_refs = [
+            recommendation.addresses_gap_id
+            for recommendation in self.recommendations
+            if recommendation.addresses_gap_id not in gap_ids
+        ]
+        if missing_gap_refs:
+            missing = ", ".join(sorted(set(missing_gap_refs)))
+            raise ValueError(f"recommendations reference missing gaps: {missing}")
+        return self

@@ -5,3 +5,8 @@ services:
       - "8501:8501"
     environment:
       - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai_compatible}
+      - LLM_BASE_URL=${LLM_BASE_URL:-}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-}
+      - LLM_ALLOW_INSECURE_BASE_URL=${LLM_ALLOW_INSECURE_BASE_URL:-false}

@@ -16,6 +16,7 @@ def test_llm_settings_reads_openai_compatible_env(monkeypatch):
     assert settings.api_key == "test-key"
     assert settings.model == "test-model"
     assert settings.is_configured
+    assert not settings.allow_insecure_base_url
 
 
 def test_llm_settings_reports_unconfigured_without_key(monkeypatch):
@@ -40,3 +41,9 @@ def test_load_env_file_sets_missing_values(tmp_path, monkeypatch):
     assert LLMSettings.from_env().model == "env-file-model"
     assert LLMSettings.from_env().api_key == "existing-key"
     assert Path(env_file).exists()
+
+
+def test_llm_settings_reads_explicit_insecure_base_url_flag(monkeypatch):
+    monkeypatch.setenv("LLM_ALLOW_INSECURE_BASE_URL", "true")
+
+    assert LLMSettings.from_env().allow_insecure_base_url

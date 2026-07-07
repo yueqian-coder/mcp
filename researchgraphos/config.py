@@ -22,6 +22,7 @@ class LLMSettings:
     base_url: str
     api_key: str
     model: str
+    allow_insecure_base_url: bool = False
 
     @classmethod
     def from_env(cls) -> "LLMSettings":
@@ -30,6 +31,10 @@ class LLMSettings:
             base_url=os.getenv("LLM_BASE_URL", ""),
             api_key=os.getenv("LLM_API_KEY", ""),
             model=os.getenv("LLM_MODEL", ""),
+            allow_insecure_base_url=os.getenv("LLM_ALLOW_INSECURE_BASE_URL", "")
+            .strip()
+            .lower()
+            in {"1", "true", "yes", "on"},
         )
 
     @property

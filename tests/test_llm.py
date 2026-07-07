@@ -1,7 +1,7 @@
 import json
 
 from researchgraphos.config import LLMSettings
-from researchgraphos.llm import OpenAICompatibleClient
+from researchgraphos.llm import LLMError, OpenAICompatibleClient
 
 
 class FakeTransport:
@@ -68,3 +68,35 @@ def test_openai_compatible_client_strips_markdown_json_fence():
     client = OpenAICompatibleClient(settings=settings, transport=transport)
 
     assert client.complete_json([{"role": "user", "content": "Return JSON"}]) == {"ok": True}
+
+
+def test_openai_compatible_client_rejects_insecure_base_url_by_default():
+    settings = LLMSettings(
+        provider="openai_compatible",
+        base_url="http://example.test/v1",
+        api_key="test-key",
+        model="test-model",
+    )
+    client = OpenAICompatibleClient(settings=settings, transport=FakeTransport())
+
+    try:
+        client.complete_json([{"role": "user", "content": "Return JSON"}])
+    except LLMError as exc:
+        assert "HTTPS" in str(exc)
+    else:
+        raise AssertionError("Expected insecure base URL to be rejected")
+
+
+def test_openai_compatible_client_allows_insecure_base_url_when_explicitly_enabled():
+    transport = FakeTransport()
+    settings = LLMSettings(
+        provider="openai_compatible",
+        base_url="http://localhost:8000/v1",
+        api_key="test-key",
+        model="test-model",
+        allow_insecure_base_url=True,
+    )
+    client = OpenAICompatibleClient(settings=settings, transport=transport)
+
+    assert client.complete_json([{"role": "user", "content": "Return JSON"}])["ok"]
+    assert transport.calls[0]["url"] == "http://localhost:8000/v1/chat/completions"

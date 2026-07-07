@@ -3,6 +3,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable
 from typing import Any
+from urllib.parse import urlparse
 
 from researchgraphos.config import LLMSettings
 
@@ -58,6 +59,10 @@ class OpenAICompatibleClient:
     def complete_json(self, messages: list[dict[str, str]]) -> dict[str, Any]:
         if not self.settings.is_configured:
             raise LLMError("LLM settings are not configured")
+
+        parsed_base_url = urlparse(self.settings.base_url)
+        if parsed_base_url.scheme != "https" and not self.settings.allow_insecure_base_url:
+            raise LLMError("LLM_BASE_URL must use HTTPS unless explicitly allowed for local dev")
 
         url = f"{self.settings.base_url.rstrip('/')}/chat/completions"
         headers = {
