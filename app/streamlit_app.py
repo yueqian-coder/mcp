@@ -2,26 +2,22 @@ from typing import get_args
 
 import streamlit as st
 
-from researchgraphos.agent import ResearchStateAgent
 from researchgraphos.config import LLMSettings, load_env_file
-from researchgraphos.demo_data import build_demo_project_state
-from researchgraphos.llm import OpenAICompatibleClient
+from researchgraphos.core import (
+    DEFAULT_PROJECT_QUESTION,
+    build_default_state,
+    build_deterministic_report,
+    run_research_state_agent,
+    state_signature,
+)
 from researchgraphos.models import ReadingStatus, ResearchStateReport
-from researchgraphos.report import build_research_state_report
-from researchgraphos.state import apply_source_status_overrides
 
 
 st.set_page_config(page_title="ResearchGraphOS", layout="wide")
 
 load_env_file()
-base_state = build_demo_project_state()
 settings = LLMSettings.from_env()
 reading_status_options = list(get_args(ReadingStatus))
-
-
-def state_signature(state: dict, question: str) -> tuple:
-    source_statuses = tuple((source.id, source.status) for source in state.get("sources", []))
-    return (state["project"].id, source_statuses, question)
 
 
 def cached_api_report(signature: tuple) -> ResearchStateReport | None:
@@ -44,13 +40,14 @@ with st.sidebar:
     )
     question = st.text_area(
         "Project-aware question",
-        value="What is this project missing, and what should I read or run next?",
+        value=DEFAULT_PROJECT_QUESTION,
         height=120,
     )
     st.divider()
     st.header("Source Status")
+    default_state = build_default_state()
     status_overrides = {}
-    for source in base_state["sources"]:
+    for source in default_state["sources"]:
         status_overrides[source.id] = st.selectbox(
             source.title,
             options=reading_status_options,
@@ -58,9 +55,9 @@ with st.sidebar:
             key=f"source_status_{source.id}",
         )
 
-state = apply_source_status_overrides(base_state, status_overrides)
-deterministic_report = build_research_state_report(state)
-signature = state_signature(state, question)
+state = build_default_state(status_overrides)
+deterministic_report = build_deterministic_report(state)
+signature = state_signature(state, question, settings=settings)
 report = deterministic_report
 
 if report_mode == "API Research State Agent":
@@ -73,20 +70,20 @@ if report_mode == "API Research State Agent":
         report = deterministic_report
         st.session_state.pop("api_report", None)
         st.session_state.pop("api_report_signature", None)
-        if settings.is_configured:
-            provider = OpenAICompatibleClient(settings=settings)
-            agent = ResearchStateAgent(provider=provider)
-            report = agent.answer(question=question, state=state)
-            if agent.used_fallback:
-                st.sidebar.warning(
-                    f"API agent failed; using deterministic fallback. Reason: {agent.fallback_reason}"
-                )
-            else:
-                st.session_state["api_report"] = report.model_dump()
-                st.session_state["api_report_signature"] = signature
-                st.sidebar.success("API report generated.")
+        result = run_research_state_agent(
+            question=question,
+            state=state,
+            settings=settings,
+        )
+        report = result.report
+        if result.used_fallback:
+            st.sidebar.warning(
+                f"API agent unavailable; using deterministic fallback. Reason: {result.fallback_reason}"
+            )
         else:
-            st.sidebar.warning("API settings are incomplete. Using deterministic fallback.")
+            st.session_state["api_report"] = report.model_dump()
+            st.session_state["api_report_signature"] = signature
+            st.sidebar.success("API report generated.")
 else:
     st.session_state.pop("api_report", None)
     st.session_state.pop("api_report_signature", None)
@@ -94,6 +91,8 @@ else:
 if report_mode == "API Research State Agent" and settings.is_configured:
     if not st.session_state.get("api_report") and report == deterministic_report:
         st.sidebar.caption("Click Generate API report to call the configured model.")
+elif report_mode == "API Research State Agent":
+    st.sidebar.caption("API settings are incomplete; generation will use deterministic fallback.")
 
 st.header(report.project.name)
 st.write(report.project.goal)

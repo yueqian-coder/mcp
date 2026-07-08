@@ -40,6 +40,11 @@ class SourceItem(BaseModel):
     citation: str
 
 
+class ProjectState(BaseModel):
+    project: Project
+    sources: list[SourceItem] = Field(default_factory=list)
+
+
 class CoverageItem(BaseModel):
     source_id: str
     source_title: str

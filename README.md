@@ -8,6 +8,16 @@ Core loop:
 Ask -> Diagnose Gap -> Confirm Status -> Recommend Next Step
 ```
 
+Architecture target:
+
+```text
+Core Engine -> Web App
+            -> future MCP bridge
+```
+
+The current app keeps reusable product logic in `researchgraphos/` so the web UI and a
+future MCP server can share the same project state, gap report, and context export logic.
+
 This MVP starts with a curated GraphRAG Router demo and generates a Detailed Research State Report.
 
 ## MVP
@@ -64,6 +74,26 @@ Never commit `.env`. It is ignored by git.
 
 API mode calls the model only when you click **Generate API report**. If the API call fails
 or returns invalid JSON, the app shows a warning and falls back to the deterministic report.
+
+## Codex / Claude Context
+
+The core package can export a project report as Markdown context for tools such as Codex
+or Claude. A real MCP server is not exposed yet; the current `researchgraphos.mcp_bridge`
+module is a read-only foundation for future MCP tools.
+
+Quick smoke:
+
+```powershell
+.venv\Scripts\python -c "from researchgraphos.mcp_bridge import get_context_markdown; print(get_context_markdown()[:200])"
+```
+
+Current bridge functions:
+
+- `get_projects_payload()`
+- `get_gap_report_payload()`
+- `get_context_markdown()`
+
+These are read-only Python functions, not an MCP transport server yet.
 
 ## Run With Docker
 
